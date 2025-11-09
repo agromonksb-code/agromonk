@@ -9,12 +9,9 @@ async function bootstrap() {
   
   // Enable CORS
   app.enableCors({
-  origin: process.env.FRONTEND_URL || '*',
-  methods: "GET,POST,PUT,DELETE,OPTIONS",
-  allowedHeaders: "Content-Type, Authorization",
-  credentials: true,
-});
-
+    origin: "*",
+    credentials: true,
+  });
 
   // Configure body parser with increased limits
   app.use(require('express').json({ limit: '50mb' }));
