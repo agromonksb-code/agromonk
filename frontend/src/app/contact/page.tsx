@@ -13,11 +13,9 @@ import {
   MessageCircle,
   Send,
   CheckCircle,
-  Leaf,
   Users,
   Shield
 } from 'lucide-react';
-import Image from 'next/image';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -36,7 +34,7 @@ export default function ContactPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
@@ -137,7 +135,7 @@ export default function ContactPage() {
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
               Have questions about our agricultural equipment or interested in becoming a dealer/distributor? 
-              We'd love to help you. Send us a message and our technical experts will respond as soon as possible.
+              We&apos;d love to help you. Send us a message and our technical experts will respond as soon as possible.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <div className="flex items-center space-x-2 text-green-600">
@@ -174,7 +172,7 @@ export default function ContactPage() {
                     Message Sent Successfully!
                   </h3>
                   <p className="text-green-600">
-                    Thank you for contacting us. We'll get back to you soon.
+                    Thank you for contacting us. We&apos;ll get back to you soon.
                   </p>
                 </div>
               ) : (
@@ -436,7 +434,7 @@ export default function ContactPage() {
               Still Have Questions?
             </h2>
             <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-              Don't hesitate to reach out to us. Our team is always ready to help you 
+              Don&apos;t hesitate to reach out to us. Our team is always ready to help you 
               with any questions or concerns you may have.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

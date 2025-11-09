@@ -121,7 +121,7 @@ export default function ModernHomePage() {
             originalPrice: 100,
             stock: 50,
             unit: 'kg',
-            category: '1',
+            subCategory: '1',
             isActive: true,
             sortOrder: 1,
             whatsappMessage: 'Hi! I am interested in Organic Tomatoes. Please provide more details.',
@@ -139,7 +139,7 @@ export default function ModernHomePage() {
             originalPrice: 150,
             stock: 30,
             unit: 'kg',
-            category: '2',
+            subCategory: '2',
             isActive: true,
             sortOrder: 2,
             whatsappMessage: 'Hi! I want to buy Fresh Mangoes. What is the current price?',
@@ -157,7 +157,7 @@ export default function ModernHomePage() {
             originalPrice: 250,
             stock: 25,
             unit: 'kg',
-            category: '3',
+            subCategory: '3',
             isActive: true,
             sortOrder: 3,
             whatsappMessage: 'Hi! I am interested in Organic Rice. Is it available?',
@@ -324,7 +324,7 @@ export default function ModernHomePage() {
               Why Choose <span className="text-gradient">AGROMONK</span>?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We're committed to providing fresh organic agricultural products with farm-to-doorstep delivery 
+              We&apos;re committed to providing fresh organic agricultural products with farm-to-doorstep delivery 
               for maximum freshness and quality assurance.
             </p>
           </div>

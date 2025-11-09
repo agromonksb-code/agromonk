@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { categoriesApi, productsApi } from '@/lib/api';
 import { Category, Product } from '@/types';
-import { ArrowLeft, Search, Leaf, ChevronRight, Home } from 'lucide-react';
+import { Leaf, ChevronRight, Home } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { resolveImageUrl } from '@/lib/images';
@@ -15,6 +15,7 @@ import { ModernFooter } from '@/components/ui/modern-footer';
 export default function CategoryPage() {
   const params = useParams();
   const categoryId = params.id as string;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { isAuthenticated, user, logout } = useAuthStore();
   
   const [category, setCategory] = useState<Category | null>(null);
@@ -38,7 +39,7 @@ export default function CategoryPage() {
         
         try {
           categoryData = await categoriesApi.getById(categoryId);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error fetching category:', error);
           // If category not found, check if it might be a sub-category
           // Try to get all categories and check if this ID is a sub-category
@@ -63,7 +64,7 @@ export default function CategoryPage() {
         
         try {
           subCategoriesData = await categoriesApi.getSubCategories(categoryId);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error fetching sub-categories:', error);
           // Continue even if sub-categories fetch fails
         }
@@ -98,10 +99,11 @@ export default function CategoryPage() {
         try {
           const productsData = await productsApi.getAll({ subCategory: selectedSubCategory });
           setProducts(productsData || []);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error fetching products for sub-category:', error);
           setProducts([]);
-          if (error.message && error.message.includes('Unable to connect')) {
+          const apiError = error as { message?: string };
+          if (apiError.message && apiError.message.includes('Unable to connect')) {
             alert('Unable to connect to server. Please check if the backend server is running.');
           }
         }
@@ -110,10 +112,11 @@ export default function CategoryPage() {
         try {
           const productsData = await productsApi.getAll({ category: categoryId });
           setProducts(productsData || []);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Error fetching products for category:', error);
           setProducts([]);
-          if (error.message && error.message.includes('Unable to connect')) {
+          const apiError = error as { message?: string };
+          if (apiError.message && apiError.message.includes('Unable to connect')) {
             alert('Unable to connect to server. Please check if the backend server is running.');
           }
         }
@@ -132,6 +135,10 @@ export default function CategoryPage() {
     product.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -147,7 +154,7 @@ export default function CategoryPage() {
         <ModernNavigation onSearch={handleSearch} />
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Category not found</h1>
-          <p className="text-gray-600 mb-4">The category you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-4">The category you&apos;re looking for doesn&apos;t exist.</p>
           <Link href="/" className="text-green-600 hover:text-green-700 underline">
             Go back to home
           </Link>
@@ -156,10 +163,6 @@ export default function CategoryPage() {
       </div>
     );
   }
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -253,7 +256,7 @@ export default function CategoryPage() {
                 <Leaf className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No Sub-Categories</h3>
                 <p className="text-gray-600 mb-4">
-                  This category doesn't have any sub-categories yet.
+                  This category doesn&apos;t have any sub-categories yet.
                 </p>
                 <p className="text-sm text-gray-500">
                   Products will be shown directly below.

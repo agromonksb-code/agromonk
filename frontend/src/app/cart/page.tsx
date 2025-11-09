@@ -33,7 +33,7 @@ export default function CartPage() {
             </div>
             <CardTitle>Your cart is empty</CardTitle>
             <CardDescription>
-              Looks like you haven't added any items to your cart yet.
+              Looks like you haven&apos;t added any items to your cart yet.
             </CardDescription>
           </CardHeader>
           <CardContent>

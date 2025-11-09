@@ -33,6 +33,7 @@ export interface Product {
 export interface User {
   id: string;
   email: string;
+  name?: string;
   role: string;
 }
 
@@ -45,6 +46,11 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   success: boolean;
+}
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
 }
 
 export interface LandingContent {

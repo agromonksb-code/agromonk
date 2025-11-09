@@ -10,7 +10,6 @@ import {
   Heart,
   Truck,
   Shield,
-  Clock,
   CheckCircle
 } from 'lucide-react';
 import Image from 'next/image';
@@ -137,8 +136,8 @@ export default function AboutPage() {
             <p className="text-lg text-gray-600 leading-relaxed">
               We work directly with leading agricultural equipment manufacturers and research institutions, 
               ensuring farmers have access to the latest and most efficient farming machinery. 
-              Our commitment to agricultural excellence extends beyond just selling equipment – 
-              we're building a community that values innovation, efficiency, and complete farm mechanization.
+              Our commitment to agricultural excellence extends beyond just selling equipment &ndash; 
+              we&apos;re building a community that values innovation, efficiency, and complete farm mechanization.
             </p>
           </div>
         </div>

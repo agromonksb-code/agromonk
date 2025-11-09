@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ import { ModernNavigation } from '@/components/ui/modern-navigation';
 import { ModernFooter } from '@/components/ui/modern-footer';
 import Link from 'next/link';
 
-export default function ProductsPage() {
+function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,10 +99,7 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ModernNavigation onSearch={handleSearch} />
-
-      <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-4">All Products</h1>
           
@@ -149,7 +146,7 @@ export default function ProductsPage() {
 
           {/* Results count */}
           <p className="text-muted-foreground mb-6">
-            {loading ? 'Loading...' : `${products.length} product${products.length !== 1 ? 's' : ''} found`}
+            {loading ? 'Loading...' : `${products.length} ${products.length !== 1 ? 'products' : 'product'} found`}
           </p>
         </div>
 
@@ -215,9 +212,28 @@ export default function ProductsPage() {
             ))}
           </div>
         )}
-      </div>
+    </div>
+  );
+}
 
-      {/* Footer */}
+export default function ProductsPage() {
+  const handleSearch = (query: string) => {
+    // Search is handled inside ProductsContent
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <ModernNavigation onSearch={handleSearch} />
+      <Suspense fallback={
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading products...</p>
+          </div>
+        </div>
+      }>
+        <ProductsContent />
+      </Suspense>
       <ModernFooter />
     </div>
   );

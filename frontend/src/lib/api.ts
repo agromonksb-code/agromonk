@@ -50,7 +50,7 @@ export const authApi = {
     const response = await api.post('/auth/login', body);
     return response.data;
   },
-  initAdmin: async (): Promise<any> => {
+  initAdmin: async (): Promise<{ message: string }> => {
     const response = await api.get('/auth/init-admin');
     return response.data;
   },
@@ -106,9 +106,10 @@ export const productsApi = {
       const url = `/products${qs ? `?${qs}` : ''}`;
       const response = await api.get(url);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching products:', error);
-      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+      const networkError = error as { code?: string; message?: string };
+      if (networkError.code === 'ERR_NETWORK' || networkError.message === 'Network Error') {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
         console.error('Network error - check if backend server is running on', apiUrl);
         throw new Error('Unable to connect to server. Please check if the backend server is running.');

@@ -5,7 +5,7 @@ import { categoriesApi, productsApi, authApi, landingApi } from '@/lib/api';
 import { Category, Product, User, LandingContent } from '@/types';
 import { useAuthStore } from '@/store/auth-store';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Eye, EyeOff, Save, X, LogOut, Leaf } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, LogOut, Leaf } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { resolveImageUrl } from '@/lib/images';
 
@@ -17,8 +17,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'categories' | 'subcategories' | 'products' | 'landing'>('categories');
   const [showForm, setShowForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [formData, setFormData] = useState<any>({});
+  const [editingItem, setEditingItem] = useState<Category | Product | null>(null);
+  const [formData, setFormData] = useState<Partial<Category | Product>>({});
+  const [loginFormData, setLoginFormData] = useState<{ email?: string; password?: string }>({});
   const [landing, setLanding] = useState<LandingContent | null>(null);
   const [selectedCategoryForProduct, setSelectedCategoryForProduct] = useState<string>('');
 
@@ -75,12 +76,13 @@ export default function AdminPage() {
   useEffect(() => {
     if (editingItem && showForm) {
       // For sub-categories, ensure parentCategory is set correctly
-      if (activeTab === 'subcategories' && editingItem.parentCategory) {
-        const parentId = typeof editingItem.parentCategory === 'object' && editingItem.parentCategory
-          ? editingItem.parentCategory._id 
-          : editingItem.parentCategory;
-        setFormData(prev => {
-          if (prev.parentCategory !== parentId) {
+      if (activeTab === 'subcategories' && 'parentCategory' in editingItem && editingItem.parentCategory) {
+        const categoryItem = editingItem as Category;
+        const parentId = typeof categoryItem.parentCategory === 'object' && categoryItem.parentCategory
+          ? categoryItem.parentCategory._id 
+          : categoryItem.parentCategory;
+        setFormData((prev) => {
+          if ((prev as Partial<Category>).parentCategory !== parentId) {
             return {
               ...prev,
               parentCategory: parentId || null,
@@ -91,10 +93,11 @@ export default function AdminPage() {
       }
       
       // For products, ensure category and subCategory are set correctly
-      if (activeTab === 'products' && editingItem.subCategory) {
-        const subCategoryId = typeof editingItem.subCategory === 'object' && editingItem.subCategory
-          ? editingItem.subCategory._id 
-          : editingItem.subCategory;
+      if (activeTab === 'products' && 'subCategory' in editingItem && editingItem.subCategory) {
+        const productItem = editingItem as Product;
+        const subCategoryId = typeof productItem.subCategory === 'object' && productItem.subCategory
+          ? productItem.subCategory._id 
+          : productItem.subCategory;
         
         if (subCategoryId) {
           // Find the sub-category to get its parent
@@ -107,8 +110,8 @@ export default function AdminPage() {
           }
           
           // Ensure subCategory is set in formData
-          setFormData(prev => {
-            if (prev.subCategory !== subCategoryId) {
+          setFormData((prev) => {
+            if ((prev as Partial<Product>).subCategory !== subCategoryId) {
               return {
                 ...prev,
                 subCategory: subCategoryId || '',
@@ -124,7 +127,7 @@ export default function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await authApi.login(formData.email, formData.password);
+      const response = await authApi.login(loginFormData.email || '', loginFormData.password || '');
       // Store token in both places for compatibility
       localStorage.setItem('auth_token', response.access_token);
       localStorage.setItem('token', response.access_token);
@@ -133,7 +136,7 @@ export default function AdminPage() {
       setAuth(response.user, response.access_token);
       setAdminUser(response.user);
       // Clear form data
-      setFormData({});
+      setLoginFormData({});
     } catch (error) {
       console.error('Login error:', error);
       alert('Login failed. Please check your credentials.');
@@ -150,9 +153,17 @@ export default function AdminPage() {
     setProducts([]);
   };
 
+  // Helper function to extract ID from string | Category | null
+  const extractId = (value: string | Category | null | undefined): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    return value._id;
+  };
+
   // Helper function to remove MongoDB-specific fields
-  const cleanFormData = (data: any) => {
-    const { _id, createdAt, updatedAt, __v, ...cleaned } = data;
+  const cleanFormData = (data: Partial<Category | Product>) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, createdAt, updatedAt, __v, ...cleaned } = data as Partial<Category | Product> & { _id?: string; createdAt?: string; updatedAt?: string; __v?: number };
     return cleaned;
   };
 
@@ -183,13 +194,14 @@ export default function AdminPage() {
       setEditingItem(null);
       setFormData({});
       setSelectedCategoryForProduct('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving:', error);
-      if (error.response?.status === 401) {
+      const apiError = error as { response?: { status?: number; data?: { message?: string } }; message?: string };
+      if (apiError.response?.status === 401) {
         alert('Your session has expired. Please log in again.');
         handleLogout();
       } else {
-        alert(`Error saving item: ${error.response?.data?.message || error.message || 'Please try again.'}`);
+        alert(`Error saving item: ${apiError.response?.data?.message || apiError.message || 'Please try again.'}`);
       }
     }
   };
@@ -211,55 +223,59 @@ export default function AdminPage() {
     }
   };
 
-  const handleEdit = async (item: any) => {
+  const handleEdit = async (item: Category | Product) => {
     setEditingItem(item);
     
     // If editing a sub-category, ensure parentCategory is properly set
-    if (activeTab === 'subcategories' && item.parentCategory) {
-      const parentId = typeof item.parentCategory === 'object' && item.parentCategory
-        ? item.parentCategory._id 
-        : item.parentCategory;
+    if (activeTab === 'subcategories' && 'parentCategory' in item && item.parentCategory) {
+      const categoryItem = item as Category;
+      const parentId = typeof categoryItem.parentCategory === 'object' && categoryItem.parentCategory
+        ? categoryItem.parentCategory._id 
+        : categoryItem.parentCategory;
       setFormData({
-        ...item,
+        ...categoryItem,
         parentCategory: parentId || null,
       });
-    } else {
-      setFormData(item);
-    }
-    
-    // If editing a product, set the category based on sub-category's parent
-    if (activeTab === 'products' && item.subCategory) {
-      let subCat = typeof item.subCategory === 'object' 
-        ? item.subCategory 
-        : categories.find(c => c._id === item.subCategory);
-      
-      // If subCategory is just an ID and not found in categories, fetch it
-      if (!subCat && typeof item.subCategory === 'string') {
-        try {
-          subCat = await categoriesApi.getById(item.subCategory);
-        } catch (error) {
-          console.error('Error fetching sub-category:', error);
+    } else if (activeTab === 'products' && 'subCategory' in item) {
+      const productItem = item as Product;
+      // If editing a product, set the category based on sub-category's parent
+      if (productItem.subCategory) {
+        let subCat = typeof productItem.subCategory === 'object' 
+          ? productItem.subCategory 
+          : categories.find(c => c._id === productItem.subCategory);
+        
+        // If subCategory is just an ID and not found in categories, fetch it
+        if (!subCat && typeof productItem.subCategory === 'string') {
+          try {
+            subCat = await categoriesApi.getById(productItem.subCategory);
+          } catch (error) {
+            console.error('Error fetching sub-category:', error);
+          }
         }
-      }
-      
-      if (subCat && subCat.parentCategory) {
-        const parentId = typeof subCat.parentCategory === 'object' && subCat.parentCategory
-          ? subCat.parentCategory._id 
-          : subCat.parentCategory;
-        setSelectedCategoryForProduct(parentId || '');
+        
+        if (subCat && subCat.parentCategory) {
+          const parentId = typeof subCat.parentCategory === 'object' && subCat.parentCategory
+            ? subCat.parentCategory._id 
+            : subCat.parentCategory;
+          setSelectedCategoryForProduct(parentId || '');
+        } else {
+          setSelectedCategoryForProduct('');
+        }
+        
+        // Ensure subCategory is set in formData as a string ID
+        const subCategoryId = typeof productItem.subCategory === 'object' && productItem.subCategory
+          ? productItem.subCategory._id 
+          : productItem.subCategory;
+        setFormData({
+          ...productItem,
+          subCategory: subCategoryId || '',
+        });
       } else {
         setSelectedCategoryForProduct('');
+        setFormData(productItem);
       }
-      
-      // Ensure subCategory is set in formData as a string ID
-      const subCategoryId = typeof item.subCategory === 'object' && item.subCategory
-        ? item.subCategory._id 
-        : item.subCategory;
-      setFormData({
-        ...item,
-        subCategory: subCategoryId || '',
-      });
     } else {
+      setFormData(item);
       setSelectedCategoryForProduct('');
     }
     
@@ -308,8 +324,8 @@ export default function AdminPage() {
                 type="email"
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                value={formData.email || ''}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                value={loginFormData.email || ''}
+                onChange={(e) => setLoginFormData({ ...loginFormData, email: e.target.value })}
                 placeholder="admin@example.com"
               />
             </div>
@@ -321,8 +337,8 @@ export default function AdminPage() {
                 type="password"
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                value={formData.password || ''}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                value={loginFormData.password || ''}
+                onChange={(e) => setLoginFormData({ ...loginFormData, password: e.target.value })}
                 placeholder="Enter your password"
               />
             </div>
@@ -668,7 +684,7 @@ export default function AdminPage() {
                     const subCat = typeof (item as Product).subCategory === 'object' 
                       ? (item as Product).subCategory 
                       : categories.find(c => c._id === (item as Product).subCategory);
-                    const subCatName = subCat?.name || 'N/A';
+                    const subCatName = (subCat && typeof subCat === 'object' && 'name' in subCat) ? subCat.name : 'N/A';
                     
                     return (
                       <tr key={item._id} className="hover:bg-gray-50">
@@ -898,17 +914,17 @@ export default function AdminPage() {
                           <select
                             required
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            value={formData.parentCategory || ''}
-                            onChange={(e) => setFormData({ ...formData, parentCategory: e.target.value || null })}
+                            value={extractId((formData as Partial<Category>).parentCategory)}
+                            onChange={(e) => setFormData({ ...formData, parentCategory: e.target.value || null } as Partial<Category>)}
                           >
                             <option value="">Select Parent Category</option>
                             {categories.filter(cat => !cat.parentCategory || (typeof cat.parentCategory === 'string' && !cat.parentCategory)).map(cat => (
                               <option key={cat._id} value={cat._id}>{cat.name}</option>
                             ))}
                           </select>
-                          {formData.parentCategory && (
+                          {(formData as Partial<Category>).parentCategory && (
                             <p className="mt-1 text-sm text-blue-600">
-                              ✓ Creating a Sub-Category under "{categories.find(c => c._id === formData.parentCategory)?.name || 'Selected Category'}"
+                              ✓ Creating a Sub-Category under &quot;{categories.find(c => c._id === extractId((formData as Partial<Category>).parentCategory))?.name || 'Selected Category'}&quot;
                             </p>
                           )}
                         </div>
@@ -919,8 +935,8 @@ export default function AdminPage() {
                           </label>
                           <select
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            value={formData.parentCategory || ''}
-                            onChange={(e) => setFormData({ ...formData, parentCategory: e.target.value || null })}
+                            value={extractId((formData as Partial<Category>).parentCategory)}
+                            onChange={(e) => setFormData({ ...formData, parentCategory: e.target.value || null } as Partial<Category>)}
                           >
                             <option value="">Main Category (No Parent)</option>
                             {categories.filter(cat => !cat.parentCategory || (typeof cat.parentCategory === 'string' && !cat.parentCategory)).map(cat => (
@@ -945,8 +961,8 @@ export default function AdminPage() {
                       </div>
                       <div>
                         <ImageUpload
-                          images={formData.image ? [formData.image] : []}
-                          onImagesChange={(images) => setFormData({ ...formData, image: images[0] || '' })}
+                          images={(formData as Partial<Category>).image ? [(formData as Partial<Category>).image!] : []}
+                          onImagesChange={(images) => setFormData({ ...formData, image: images[0] || '' } as Partial<Category>)}
                           maxImages={1}
                         />
                       </div>
@@ -1007,8 +1023,8 @@ export default function AdminPage() {
                           required
                           disabled={!selectedCategoryForProduct}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                          value={formData.subCategory || ''}
-                          onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
+                          value={extractId((formData as Partial<Product>).subCategory)}
+                          onChange={(e) => setFormData({ ...formData, subCategory: e.target.value } as Partial<Product>)}
                         >
                           <option value="">
                             {selectedCategoryForProduct ? 'Select Sub-Category' : 'Select Category first'}
@@ -1046,8 +1062,8 @@ export default function AdminPage() {
                       </div>
                       <div>
                         <ImageUpload
-                          images={formData.images || []}
-                          onImagesChange={(images) => setFormData({ ...formData, images })}
+                          images={(formData as Partial<Product>).images || []}
+                          onImagesChange={(images) => setFormData({ ...formData, images } as Partial<Product>)}
                           maxImages={5}
                         />
                       </div>
@@ -1060,8 +1076,8 @@ export default function AdminPage() {
                             type="number"
                             required
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            value={formData.price || ''}
-                            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                            value={(formData as Partial<Product>).price || ''}
+                            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) } as Partial<Product>)}
                           />
                         </div>
                         <div>
@@ -1071,8 +1087,8 @@ export default function AdminPage() {
                           <input
                             type="number"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            value={formData.originalPrice || ''}
-                            onChange={(e) => setFormData({ ...formData, originalPrice: Number(e.target.value) })}
+                            value={(formData as Partial<Product>).originalPrice || ''}
+                            onChange={(e) => setFormData({ ...formData, originalPrice: Number(e.target.value) } as Partial<Product>)}
                           />
                         </div>
                         <div>
@@ -1082,8 +1098,8 @@ export default function AdminPage() {
                           <input
                             type="number"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            value={formData.stock || ''}
-                            onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
+                            value={(formData as Partial<Product>).stock || ''}
+                            onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) } as Partial<Product>)}
                           />
                         </div>
                       </div>
@@ -1095,8 +1111,8 @@ export default function AdminPage() {
                           <input
                             type="text"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            value={formData.unit || ''}
-                            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                            value={(formData as Partial<Product>).unit || ''}
+                            onChange={(e) => setFormData({ ...formData, unit: e.target.value } as Partial<Product>)}
                           />
                         </div>
                         <div>
@@ -1106,8 +1122,8 @@ export default function AdminPage() {
                           <input
                             type="tel"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            value={formData.phoneNumber || ''}
-                            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                            value={(formData as Partial<Product>).phoneNumber || ''}
+                            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value } as Partial<Product>)}
                           />
                         </div>
                       </div>
@@ -1118,8 +1134,8 @@ export default function AdminPage() {
                         <textarea
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           rows={2}
-                          value={formData.whatsappMessage || ''}
-                          onChange={(e) => setFormData({ ...formData, whatsappMessage: e.target.value })}
+                          value={(formData as Partial<Product>).whatsappMessage || ''}
+                          onChange={(e) => setFormData({ ...formData, whatsappMessage: e.target.value } as Partial<Product>)}
                         />
                       </div>
                       <div className="flex items-center space-x-4">
