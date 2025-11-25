@@ -1,6 +1,7 @@
 # API Configuration
 <!-- NEXT_PUBLIC_API_URL=http://localhost:3001/api -->
-NEXT_PUBLIC_API_URL=https://api.agromonk.com
+NEXT_PUBLIC_API_URL=https://api.agromonk.com/api
+NEXT_PUBLIC_IMAGE_URL=https://api.agromonk.com
 
 # App Configuration 
 NEXT_PUBLIC_APP_NAME=E-Commerce Store

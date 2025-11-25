@@ -6,7 +6,7 @@ export function resolveImageUrl(pathOrUrl: string): string {
     return pathOrUrl;
   }
 
-  const base = process.env.NEXT_PUBLIC_IMAGE_BASE || 'https://api.agromonk.com';
+  const base = process.env.NEXT_PUBLIC_IMAGE_URL || 'https://api.agromonk.com';
 
   // If backend returns only filename → add /uploads/
   if (!pathOrUrl.startsWith('/uploads')) {
