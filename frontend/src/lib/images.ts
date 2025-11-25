@@ -1,20 +1,17 @@
 export function resolveImageUrl(pathOrUrl: string): string {
   if (!pathOrUrl) return '';
-  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://') || pathOrUrl.startsWith('data:')) {
+
+  // already full URL
+  if (pathOrUrl.startsWith('http') || pathOrUrl.startsWith('data:')) {
     return pathOrUrl;
   }
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-  let origin = 'http://localhost:3001';
-  try {
-    const parsed = new URL(apiBase);
-    origin = `${parsed.protocol}//${parsed.host}`;
-  } catch {}
+  const base = process.env.NEXT_PUBLIC_IMAGE_BASE || 'https://api.agromonk.com';
 
-  if (pathOrUrl.startsWith('/')) {
-    return origin + pathOrUrl;
+  // If backend returns only filename → add /uploads/
+  if (!pathOrUrl.startsWith('/uploads')) {
+    return `${base}/uploads/${pathOrUrl}`;
   }
-  return `${origin}/${pathOrUrl}`;
+
+  return `${base}${pathOrUrl}`;
 }
-
-
